@@ -2,9 +2,22 @@
 name: baseline_clean
 seeds: [0, 1, 2]
 afe:
+  analog_fs: 500
   adc_bits: 16
   fs_out: 500
   cmrr_db: 120
   mains_amp_v: 0.0
   noise_uvrms: 0.0
   hp_cutoff_hz: null
+data:
+  root: data/raw/ptbxl
+  sampling_rate: 500
+  lead: II
+  duration_seconds: 10
+training:
+  epochs: 20
+  batch_size: 32
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  patience: 5
+output_dir: outputs/baseline_clean
