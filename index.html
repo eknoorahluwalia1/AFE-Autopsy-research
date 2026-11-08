@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AFE Autopsy: Which Wearable ECG Flaws Break Arrhythmia Classifiers?</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fbf7f4;--grid:#f1dcd8;--ink:#14213d;--mut:#55607a;--line:#e3d3cf;--card:#fffdfb;--red:#d62839;--blue:#1d4e89;--ok:#2a7a4b;--warn:#b7791f;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1626;--grid:#1a2338;--ink:#e8ecf5;--mut:#9aa6c2;--line:#2a3550;--card:#141d33;--red:#ff5c6c;--blue:#7ab0ee;--ok:#5fcf8b;--warn:#e8b45a}}
+:root[data-theme="dark"]{--bg:#0f1626;--grid:#1a2338;--ink:#e8ecf5;--mut:#9aa6c2;--line:#2a3550;--card:#141d33;--red:#ff5c6c;--blue:#7ab0ee;--ok:#5fcf8b;--warn:#e8b45a}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:calc(64px + env(safe-area-inset-top,0px))}
+body{margin:0;background:var(--bg);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px;color:var(--ink);font:400 16px/1.65 "IBM Plex Sans",system-ui,sans-serif}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:30}
+h1,h2,h3{font-family:"Bricolage Grotesque",system-ui,sans-serif;line-height:1.1;margin:0}
+a{color:var(--blue)}
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:2px solid var(--ink);display:flex;gap:4px;align-items:center;overflow-x:auto;padding:10px 20px;white-space:nowrap}
+nav b{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;margin-right:12px;color:var(--red)}
+nav a{color:var(--ink);text-decoration:none;font-size:14px;font-weight:500;padding:4px 10px;border-radius:99px}
+nav a:hover,nav a:focus-visible{background:var(--ink);color:var(--bg);outline:none}
+main{max-width:1020px;margin:0 auto;padding:0 20px 80px}
+.hero{padding:64px 0 28px}
+.hero h1{font-size:clamp(34px,6.2vw,64px);font-weight:800;max-width:15em;letter-spacing:-.02em}
+.hero p.lead{font-size:19px;max-width:42em;color:var(--mut);margin:18px 0 0}
+.trace{width:100%;height:120px;margin:26px 0 8px;display:block}
+.trace path{fill:none;stroke:var(--red);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:2400;stroke-dashoffset:2400;animation:draw 3.2s ease-out forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion:reduce){.trace path{animation:none;stroke-dashoffset:0}}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:0;border:2px solid var(--ink);background:var(--card);margin-top:22px}
+.stats div{padding:14px 16px;border-right:1px solid var(--line)}
+.stats div:last-child{border-right:0}
+.stats span{display:block;font-size:13px;color:var(--mut)}
+.stats strong{font-size:16px}
+section{padding:54px 0 6px}
+section>h2{font-size:clamp(26px,4vw,38px);font-weight:800;margin-bottom:10px;max-width:20em}
+section>p.intro{color:var(--mut);max-width:46em;margin:0 0 22px}
+h3{font-size:19px;font-weight:600;margin-bottom:6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.card{background:var(--card);border:1.5px solid var(--ink);padding:18px 20px}
+.card p{margin:6px 0 0;font-size:15px}
+.card .tag{display:inline-block;font-weight:600;font-size:13px;color:var(--bg);background:var(--blue);padding:1px 9px;border-radius:99px;margin-bottom:8px}
+.card.red .tag{background:var(--red)}
+.chain{display:flex;flex-wrap:wrap;gap:0;align-items:stretch;margin:6px 0 20px}
+.chain div{background:var(--card);border:1.5px solid var(--ink);padding:10px 12px;font-size:14px;font-weight:500;margin:0 -1.5px -1.5px 0;flex:1 1 130px}
+.chain div small{display:block;color:var(--mut);font-weight:400;font-size:12.5px}
+.chain .opt{border-style:dashed}
+.chain .tgt{background:var(--ink);color:var(--bg)}
+.chain .tgt small{color:var(--grid)}
+.tw{overflow-x:auto;border:1.5px solid var(--ink);background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:560px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--ink);color:var(--bg);font-weight:600;font-size:13.5px}
+tr:last-child td{border-bottom:0}
+code,pre{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13.5px}
+pre{background:var(--card);border:1.5px solid var(--ink);padding:16px;overflow-x:auto;margin:0;line-height:1.6}
+ul{padding-left:20px;margin:8px 0}
+li{margin:4px 0}
+.team{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.role{background:var(--card);border:1.5px solid var(--ink);border-top:6px solid var(--blue);padding:16px 18px}
+.role:nth-child(2n){border-top-color:var(--red)}
+.role:nth-child(3n){border-top-color:var(--ok)}
+.role h3{margin-bottom:2px}
+.role .who{font-weight:600;font-size:15px;margin:6px 0 2px}
+.role .who span{display:inline-block;margin:0 6px 4px 0;padding:1px 10px;border:1.5px solid var(--ink);border-radius:99px;font-size:14px}
+.role .who span.lead{background:var(--ink);color:var(--bg)}
+.role ul{font-size:14.5px;color:var(--mut)}
+.tl{border-left:3px solid var(--ink);margin-left:6px}
+.tl .step{position:relative;padding:0 0 22px 24px}
+.tl .step::before{content:"";position:absolute;left:-9px;top:6px;width:15px;height:15px;background:var(--red);border:3px solid var(--bg);border-radius:50%}
+.tl .step b{font-family:"Bricolage Grotesque",sans-serif;font-size:18px}
+.tl .step small{color:var(--blue);font-weight:600;margin-left:8px}
+.tl .step ul{margin-top:4px}
+.risk{border-left:6px solid var(--warn);background:var(--card);padding:12px 18px;margin:12px 0}
+.risk b{display:block}
+.risk p{margin:2px 0 0;font-size:15px}
+.pill{font-size:12.5px;font-weight:600;padding:1px 9px;border-radius:99px;border:1.5px solid currentColor}
+.pill.t{color:var(--ok)}.pill.f{color:var(--red)}
+footer{border-top:2px solid var(--ink);margin-top:60px;padding-top:18px;color:var(--mut);font-size:14px}
+:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+</style>
+</head>
+<body id="top">
+<nav aria-label="Sections"><b>AFE Autopsy</b>
+<a href="#overview">Overview</a><a href="#chain">Signal chain</a><a href="#sweeps">Sweeps</a><a href="#data">Data</a><a href="#models">Models</a><a href="#metrics">Metrics</a><a href="#validate">Validation</a><a href="#team">Team</a><a href="#timeline">Timeline</a><a href="#risks">Risks</a></nav>
+
+<main>
+<header class="hero">
+<h1>Which flaws in a wearable ECG front-end break arrhythmia detection?</h1>
+<p class="lead">We simulate a cheap analog front-end (AFE), push clean ECG recordings through it, and measure how much a neural-network classifier loses. Then we find the cheapest hardware that stays within 1% of clean accuracy.</p>
+<svg class="trace" viewBox="0 0 1000 120" preserveAspectRatio="none" aria-hidden="true"><path d="M0 70 H80 q10 -12 22 0 H140 l8 6 l10 -62 l12 96 l8 -40 H230 q20 -22 44 0 H400 l8 6 l10 -62 l12 96 l8 -40 H490 q20 -22 44 0 H660 l8 6 l10 -62 l12 96 l8 -40 H750 q20 -22 44 0 H920 l8 6 l10 -62 l12 96 l8 -40 H1000"/></svg>
+<div class="stats">
+<div><span>Type</span><strong>Simulation + public data only</strong></div>
+<div><span>Budget</span><strong>$0</strong></div>
+<div><span>Compute</span><strong>AMD MI300X (ROCm, PyTorch)</strong></div>
+<div><span>Length</span><strong>About 10 weeks</strong></div>
+<div><span>Team</span><strong>9 students, 5 work areas</strong></div>
+</div>
+</header>
+
+<section id="overview">
+<h2>The question, and four guesses we will test</h2>
+<p class="intro"><b>Primary:</b> Which AFE non-idealities degrade ECG classification most, and what is the cheapest AFE design that stays within 1% of clean-signal accuracy? <b>Secondary:</b> for a fixed noise budget, is it better to spend on analog hardware or to fix the signal digitally afterward?</p>
+<div class="grid">
+<div class="card"><span class="tag">H1</span><h3>Pickup beats bit depth</h3><p>Electrode impedance mismatch plus finite CMRR (mains pickup) hurts more than ADC bit depth.</p></div>
+<div class="card"><span class="tag">H2</span><h3>High-pass hurts ST classes</h3><p>A cutoff at or above 0.5 Hz distorts the ST segment, so MI and STTC suffer most.</p></div>
+<div class="card"><span class="tag">H3</span><h3>A cliff, then flat returns</h3><p>Below some sampling rate and bit depth accuracy collapses. Above it, extra hardware buys almost nothing.</p></div>
+<div class="card"><span class="tag">H4</span><h3>Software rescues cheap hardware</h3><p>A small digital denoiser recovers most of the loss from a low-cost analog chain.</p></div>
+</div>
+<p class="intro" style="margin-top:18px">These are hypotheses to test, not assumptions. If one is wrong, that is a result.</p>
+</section>
+
+<section id="chain">
+<h2>The simulated signal chain</h2>
+<p class="intro">Each block is its own Python module with its own unit test. Every block can be switched off, which is how we isolate one flaw at a time.</p>
+<div class="chain">
+<div>Clean ECG<small>PTB-XL record</small></div>
+<div>Electrode / skin<small>impedance model</small></div>
+<div>Mains + common-mode<small>50/60 Hz injection</small></div>
+<div>Instrumentation amp<small>gain, noise, finite CMRR</small></div>
+<div>Analog high-pass<small>0.05 to 1 Hz</small></div>
+<div>Anti-alias low-pass<small>40 to 150 Hz, order 1-4</small></div>
+<div>Sampling<small>100 to 500 Hz</small></div>
+<div>ADC quantizer<small>6 to 16 bits</small></div>
+<div class="opt">Digital denoiser<small>optional</small></div>
+<div class="tgt">Classifier<small>1D ResNet</small></div>
+</div>
+<div class="grid">
+<div class="card"><h3>Why mismatch plus CMRR matters</h3><p>Mains hits both electrodes as a common-mode voltage. If the two electrode impedances differ, part of it becomes a differential voltage that the amp cannot reject. CMRR sets how much common-mode survives. That is why the two are modeled together.</p></div>
+<div class="card"><h3>Datasheet grounding</h3><p>Parameter ranges are justified with public datasheets: AD8232, INA333, ADS1292R. No purchase needed.</p></div>
+<div class="card"><h3>Realism flags</h3><p>Any unrealistic assumption gets written down in the paper instead of hidden. Example: ideal electrodes, perfect clock, or noise that is white when real noise is not.</p></div>
+</div>
+</section>
+
+<section id="sweeps">
+<h2>What we sweep</h2>
+<p class="intro">Step one: one-at-a-time sweeps to isolate each flaw. Step two: a fractional factorial or random-search grid to find interactions. Every configuration runs with 3 to 5 random seeds.</p>
+<div class="tw"><table>
+<tr><th>Parameter</th><th>Values</th><th>Tests</th></tr>
+<tr><td>ADC resolution</td><td>6, 8, 10, 12, 16 bits</td><td>H1, H3</td></tr>
+<tr><td>Sampling rate</td><td>100, 125, 250, 500 Hz</td><td>H3</td></tr>
+<tr><td>CMRR</td><td>60, 80, 100, 120 dB</td><td>H1</td></tr>
+<tr><td>Electrode impedance mismatch</td><td>1 kΩ to about 100 kΩ (dry electrodes are higher)</td><td>H1</td></tr>
+<tr><td>Mains interference (50/60 Hz)</td><td>none, low, high</td><td>H1</td></tr>
+<tr><td>Input-referred noise</td><td>about 1 to 20 µVrms (0.5 to 150 Hz)</td><td>H3, H4</td></tr>
+<tr><td>High-pass cutoff</td><td>0.05, 0.5, 0.67, 1.0 Hz</td><td>H2</td></tr>
+<tr><td>Low-pass cutoff / order</td><td>40 to 150 Hz; order 1 to 4</td><td>H3</td></tr>
+<tr><td>Motion / baseline artifact</td><td>none, moderate, severe (shaped from the NST database)</td><td>H2, H4</td></tr>
+</table></div>
+</section>
+
+<section id="data">
+<h2>Data: all free, all public</h2>
+<p class="intro">Install with <code>pip install wfdb</code>. Cite PTB-XL and PhysioNet exactly as their pages instruct.</p>
+<div class="grid">
+<div class="card"><span class="tag">Main</span><h3>PTB-XL</h3><p>5 diagnostic superclasses: NORM, MI, STTC, CD, HYP (multi-label). Official folds: 1-8 train, 9 validation, 10 test, so no patient leakage. Use 100 Hz or 500 Hz. Start with lead I / II, then go to 12-lead.</p></div>
+<div class="card"><span class="tag">Optional</span><h3>MIT-BIH Arrhythmia DB</h3><p>Beat-level labels. Used as a second dataset to check that results generalize.</p></div>
+<div class="card red"><span class="tag">Validation only</span><h3>MIT-BIH Noise Stress Test</h3><p>Real recorded baseline wander, muscle artifact, and electrode motion. We use it to check our simulated noise, never to train.</p></div>
+</div>
+</section>
+
+<section id="models">
+<h2>Models and experiments</h2>
+<div class="tw"><table>
+<tr><th>#</th><th>Model</th><th>Purpose</th></tr>
+<tr><td>1</td><td>Small 1D ResNet trained on <b>clean</b> data</td><td>Baseline accuracy</td></tr>
+<tr><td>2</td><td>Same model, tested on corrupted data</td><td>Robustness: how much does each flaw hurt?</td></tr>
+<tr><td>3</td><td>Model retrained on corrupted data matching each AFE config</td><td>How much can training alone recover?</td></tr>
+<tr><td>4</td><td>DSP-only: Pan-Tompkins QRS detection, handcrafted features, simple classifier</td><td>Is deep learning needed at all?</td></tr>
+<tr><td>5</td><td>Digital denoiser: small 1D conv autoencoder or adaptive filter</td><td>Tests H4 and the analog-vs-digital tradeoff</td></tr>
+</table></div>
+</section>
+
+<section id="metrics">
+<h2>How we measure results</h2>
+<div class="grid">
+<div class="card"><h3>Accuracy</h3><ul><li><b>Macro AUROC</b> (primary)</li><li>Macro F1</li><li>Per-class AUROC, to see which classes suffer</li><li>Drop vs clean, in percentage points</li></ul></div>
+<div class="card"><h3>Cost</h3><ul><li>Rough power proxy: bits × sample rate</li><li>Simple energy model, with assumptions written down</li></ul></div>
+<div class="card"><h3>Statistics</h3><ul><li>Mean ± std across 3-5 seeds</li><li>Official folds only</li><li>Same test set for every config</li></ul></div>
+<div class="card red"><span class="tag">Final figure</span><h3>Accuracy vs hardware cost</h3><p>A heatmap and Pareto plot. The best designs sit on the frontier: lowest cost for a given accuracy.</p></div>
+</div>
+</section>
+
+<section id="validate">
+<h2>Validation: why a judge should believe the simulator</h2>
+<div class="tw"><table>
+<tr><th>Check</th><th>Pass condition</th></tr>
+<tr><td>Zero noise + 16 bits + high sample rate</td><td>Reproduces clean accuracy</td></tr>
+<tr><td>Mains tone</td><td>Appears at exactly 50 or 60 Hz in the PSD</td></tr>
+<tr><td>Quantization noise</td><td>SQNR follows about 6.02·N + 1.76 dB</td></tr>
+<tr><td>Filter blocks</td><td>Measured frequency response matches the design (unit tests)</td></tr>
+<tr><td>Simulated vs real noise</td><td>PSD and SNR compared with MIT-BIH NST recordings</td></tr>
+</table></div>
+<p class="intro" style="margin-top:14px">We say plainly in the paper that this is a simulation study, and we check the literature before claiming novelty. Our contribution is the systematic sweep and the cost-vs-accuracy map, not any single technique.</p>
+</section>
+
+<section id="team">
+<h2>Who does what</h2>
+<p class="intro">Nine people, five work areas, one project lead. Each area has a lead plus support so no one is a single point of failure. Swap names any time: the roles matter more than who holds them.</p>
+<div class="team">
+<div class="role"><h3>Project lead</h3><div class="who"><span class="lead">Eknoor</span></div><ul><li>Keeps milestones on track and unblocks people</li><li>Owns the mentor relationship and final review</li><li>Checks Exea Labs usage terms for the MI300X</li></ul></div>
+<div class="role"><h3>Analog</h3><div class="who"><span class="lead">Mist</span><span>Shaurya</span></div><ul><li>Electrode, amp, CMRR, and noise models</li><li>Datasheet justification for every range</li><li>Writes <code>electrode.py</code>, <code>amp.py</code></li></ul></div>
+<div class="role"><h3>DSP</h3><div class="who"><span class="lead">shahahaha</span><span>Aadit</span></div><ul><li>Filters, sampling, quantization</li><li>Denoiser and Pan-Tompkins baseline</li><li>Writes <code>filters.py</code>, <code>adc.py</code>, <code>dsp_baseline.py</code></li></ul></div>
+<div class="role"><h3>Machine learning</h3><div class="who"><span class="lead">Infinity</span><span>Shuchay</span></div><ul><li>1D ResNet and training pipeline</li><li>Clean, robustness, and retrained experiments</li><li>Writes <code>resnet1d.py</code>, <code>denoiser.py</code></li></ul></div>
+<div class="role"><h3>Compute and automation</h3><div class="who"><span class="lead">Neegy</span></div><ul><li>Config system, MI300X runs, logging (W&amp;B free tier or CSV)</li><li>Data download script and ROCm environment</li><li>One command per experiment</li></ul></div>
+<div class="role"><h3>Stats and writing</h3><div class="who"><span class="lead">Aarav</span></div><ul><li>Seeds, error bars, plots, curve fitting</li><li>Paper drafting and citations</li><li>Works with Eknoor on figures</li></ul></div>
+</div>
+<p class="intro" style="margin-top:18px"><b>Handoffs:</b> Analog and DSP agree on one <code>chain.py</code> interface. ML consumes whatever <code>chain.py</code> outputs. Compute runs everything. Stats checks every number before it reaches the paper.</p>
+</section>
+
+<section id="repo">
+<h2>Repo layout</h2>
+<pre>/data         download script only, never committed
+/afe          electrode.py  amp.py  filters.py  adc.py  chain.py
+/models       resnet1d.py  denoiser.py  dsp_baseline.py
+/experiments  config YAMLs, one command per run
+/analysis     plots, stats, curve fitting
+/tests        one test file per AFE block
+/paper
+README.md</pre>
+</section>
+
+<section id="timeline">
+<h2>10-week timeline</h2>
+<div class="tl">
+<div class="step"><b>Literature check, environment, data</b><small>Weeks 1-2</small><ul><li>Read prior work on noise robustness in ECG classifiers</li><li>Install wfdb and PyTorch ROCm; download PTB-XL and NST</li></ul></div>
+<div class="step"><b>Build and validate the AFE simulator</b><small>Weeks 3-4</small><ul><li>Every block unit-tested; SQNR and mains-tone checks pass</li></ul></div>
+<div class="step"><b>Clean baseline and DSP baseline</b><small>Weeks 5-6</small><ul><li>ResNet on clean PTB-XL; Pan-Tompkins pipeline</li></ul></div>
+<div class="step"><b>Sweeps and denoiser experiment</b><small>Weeks 7-8</small><ul><li>One-at-a-time sweeps, then interaction grid, 3-5 seeds</li></ul></div>
+<div class="step"><b>Analysis, figures, writing, mentor review</b><small>Weeks 9-10</small><ul><li>Pareto plot, hypothesis verdicts, paper draft</li></ul></div>
+</div>
+</section>
+
+<section id="risks">
+<h2>Honesty rules and what could go wrong</h2>
+<div class="risk"><b>Simulated noise might not match real noise</b><p>We compare against MIT-BIH NST and report where the match is weak.</p></div>
+<div class="risk"><b>Patient leakage</b><p>Official PTB-XL folds only. No random re-splitting, ever.</p></div>
+<div class="risk"><b>Results might disagree with our hypotheses</b><p>Fine. A disproved hypothesis is still a finding. We report all four verdicts.</p></div>
+<div class="risk"><b>Someone already did this</b><p>We check the literature in weeks 1-2 and do not claim novelty we cannot support.</p></div>
+<div class="risk"><b>Compute terms</b><p>Check Exea Labs usage terms before heavy MI300X runs. No hardware purchases.</p></div>
+</section>
+
+<footer>AFE Autopsy · Simulation study using PTB-XL and PhysioNet data · Plan layout inspired by the Optimizer Autopsy page. <a href="#top">Back to top</a></footer>
+</main>
+</body>
+</html>

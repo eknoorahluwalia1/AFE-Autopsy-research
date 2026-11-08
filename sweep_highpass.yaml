@@ -1,0 +1,6 @@
+# One-at-a-time sweep: high-pass cutoff (tests H2, expect MI/STTC to suffer)
+name: sweep_highpass
+seeds: [0, 1, 2]
+base: baseline_clean
+sweep:
+  afe.hp_cutoff_hz: [0.05, 0.5, 0.67, 1.0]

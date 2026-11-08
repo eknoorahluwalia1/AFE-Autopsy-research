@@ -1,0 +1,6 @@
+# One-at-a-time sweep: ADC resolution (tests H1, H3)
+name: sweep_adc_bits
+seeds: [0, 1, 2]
+base: baseline_clean
+sweep:
+  afe.adc_bits: [6, 8, 10, 12, 16]

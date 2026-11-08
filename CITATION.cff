@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite it as below."
+title: "AFE Autopsy: Which Wearable ECG Flaws Break Arrhythmia Classifiers?"
+type: software
+license: MIT
+authors:
+  - name: "AFE Autopsy team"
+# TODO: replace with individual authors, e.g.
+#  - family-names: "Lastname"
+#    given-names: "Firstname"
+repository-code: "https://github.com/<your-username>/afe-autopsy"
+keywords:
+  - ecg
+  - wearables
+  - analog-front-end
+  - robustness
+  - arrhythmia
+  - pytorch

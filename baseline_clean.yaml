@@ -1,0 +1,10 @@
+# Experiment 1: clean baseline (near-ideal chain)
+name: baseline_clean
+seeds: [0, 1, 2]
+afe:
+  adc_bits: 16
+  fs_out: 500
+  cmrr_db: 120
+  mains_amp_v: 0.0
+  noise_uvrms: 0.0
+  hp_cutoff_hz: null

@@ -1,0 +1,9 @@
+# Interaction: CMRR x electrode mismatch with mains on (tests H1)
+name: sweep_cmrr_mismatch
+seeds: [0, 1, 2]
+base: baseline_clean
+afe:
+  mains_amp_v: 0.001
+sweep:
+  afe.cmrr_db: [60, 80, 100, 120]
+  afe.z_b_ohm: [1000, 10000, 100000]
